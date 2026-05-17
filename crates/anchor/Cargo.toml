@@ -1,0 +1,20 @@
+[package]
+name = "anchor"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+db = { path = "../db" }
+alloy = { workspace = true }
+tokio = { workspace = true }
+sqlx = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
