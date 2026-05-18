@@ -281,6 +281,37 @@ export async function recordEvent(
   });
 }
 
+export type AnchorStatusFilter = "anchored" | "unanchored";
+
+export interface EventListParams {
+  product_id?: string;
+  event_type?: EventType;
+  anchor_status?: AnchorStatusFilter;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listEvents(
+  params: EventListParams = {},
+  cookieHeader?: string,
+): Promise<ProvenanceEvent[]> {
+  const search = new URLSearchParams();
+  if (params.product_id) search.set("product_id", params.product_id);
+  if (params.event_type) search.set("event_type", params.event_type);
+  if (params.anchor_status) search.set("anchor_status", params.anchor_status);
+  if (params.limit !== undefined) search.set("limit", String(params.limit));
+  if (params.offset !== undefined) search.set("offset", String(params.offset));
+  const qs = search.toString() ? `?${search.toString()}` : "";
+  return request<ProvenanceEvent[]>(`/v1/events${qs}`, {}, cookieHeader);
+}
+
+/// URL for a product's QR-code PNG. The browser fetches this directly via
+/// the same-origin Next.js proxy so the session cookie is included
+/// automatically — no fetch/blob plumbing needed.
+export function productQrUrl(productId: string): string {
+  return `/api/v1/products/${productId}/qr`;
+}
+
 // --- API keys ---
 
 // BACKEND-NEEDED: GET /v1/keys

@@ -34,6 +34,7 @@ services:
       ANCHOR_PRIVATE_KEY: ${ANCHOR_PRIVATE_KEY:-0000000000000000000000000000000000000000000000000000000000000001}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-do-not-use-in-production-32bytes}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
       API_PORT: 8080
       RUST_LOG: ${RUST_LOG:-info,sqlx=warn}
     # Host port 8080 is taken by another service on this machine (Redpanda

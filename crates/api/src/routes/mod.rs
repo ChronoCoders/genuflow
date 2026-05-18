@@ -65,6 +65,8 @@ pub fn router(state: AppState) -> Router {
         .route("/products", get(products::list).post(products::register))
         .route("/products/:id", get(products::get))
         .route("/products/:id/events", get(products::list_events).post(events::record))
+        .route("/products/:id/qr", get(products::qr))
+        .route("/events", get(events::list))
         .route("/anchors", get(anchors::list))
         .route_layer(from_fn_with_state(state.clone(), require_api_key));
 

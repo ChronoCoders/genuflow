@@ -4,10 +4,18 @@
 
 use common::{EventType, ProvenanceEvent};
 use serde_json::Value;
+use sqlx::{Postgres, QueryBuilder};
 use tracing::instrument;
 use uuid::Uuid;
 
 use crate::Db;
+
+/// Filter mode for `list_by_brand_filtered`.
+#[derive(Debug, Clone, Copy)]
+pub enum AnchorStatusFilter {
+    Anchored,
+    Unanchored,
+}
 
 /// Insert a new provenance event against `product_id`. The event is created
 /// unanchored; it will be picked up by the anchor service on its next run.
@@ -91,6 +99,53 @@ pub async fn brand_event_pairs_for_batch(
     .bind(anchor_batch_id)
     .fetch_all(db)
     .await
+}
+
+/// Paginated, filtered event listing scoped to `brand_id`. All filter
+/// arguments are optional and compose with `AND`. Ordered by `recorded_at`
+/// DESC (newest first).
+#[instrument(skip(db), err)]
+pub async fn list_by_brand_filtered(
+    db: &Db,
+    brand_id: Uuid,
+    product_id: Option<Uuid>,
+    event_type: Option<&EventType>,
+    anchor_status: Option<AnchorStatusFilter>,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<ProvenanceEvent>, sqlx::Error> {
+    let mut q: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+        r#"SELECT e.id, e.product_id, e.event_type, e.detail, e.recorded_at, e.anchor_batch_id
+           FROM provenance_events e
+           JOIN products p ON p.id = e.product_id
+           WHERE p.brand_id = "#,
+    );
+    q.push_bind(brand_id);
+
+    if let Some(pid) = product_id {
+        q.push(" AND e.product_id = ");
+        q.push_bind(pid);
+    }
+    if let Some(et) = event_type {
+        q.push(" AND e.event_type = ");
+        q.push_bind(et);
+    }
+    match anchor_status {
+        Some(AnchorStatusFilter::Anchored) => {
+            q.push(" AND e.anchor_batch_id IS NOT NULL");
+        }
+        Some(AnchorStatusFilter::Unanchored) => {
+            q.push(" AND e.anchor_batch_id IS NULL");
+        }
+        None => {}
+    }
+
+    q.push(" ORDER BY e.recorded_at DESC LIMIT ");
+    q.push_bind(limit);
+    q.push(" OFFSET ");
+    q.push_bind(offset);
+
+    q.build_query_as::<ProvenanceEvent>().fetch_all(db).await
 }
 
 /// Fetch the most recent events across all products owned by `brand_id`.

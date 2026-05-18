@@ -9,6 +9,10 @@ use db::Db;
 pub struct AppState {
     pub db: Db,
     pub auth: Arc<AuthConfig>,
+    /// Origin used to build user-facing URLs (e.g., the verify URL encoded
+    /// into product QR codes). No trailing slash. Reads from
+    /// `PUBLIC_BASE_URL`, defaults to `http://localhost:3000` for dev.
+    pub public_base_url: Arc<String>,
 }
 
 /// Auth-related runtime configuration. Wrapped in `Arc` so the AppState

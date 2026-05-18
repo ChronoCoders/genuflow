@@ -31,6 +31,10 @@ async fn main() -> anyhow::Result<()> {
     let cookie_secure = std::env::var("COOKIE_SECURE")
         .map(|v| v != "false")
         .unwrap_or(true);
+    let public_base_url = std::env::var("PUBLIC_BASE_URL")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string())
+        .trim_end_matches('/')
+        .to_string();
 
     let rpc_url = std::env::var("BASE_RPC_URL").context("BASE_RPC_URL must be set")?;
     let private_key =
@@ -53,6 +57,7 @@ async fn main() -> anyhow::Result<()> {
             jwt_secret,
             cookie_secure,
         }),
+        public_base_url: Arc::new(public_base_url),
     };
     let app = routes::router(state);
 
