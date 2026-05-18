@@ -23,7 +23,12 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "limit"] }
 
 # Database
-sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json"] }
+# `default-features = false` drops sqlx's `any` driver bundle, which would
+# otherwise transitively pull in sqlx-mysql (and via that, the vulnerable
+# `rsa 0.9.10` crate — RUSTSEC-2023-0071). We explicitly re-enable only the
+# features we use: the Postgres driver, the Tokio runtime + rustls TLS, the
+# migration system, the macros (for `migrate!`), and the type integrations.
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "macros", "migrate", "uuid", "chrono", "json"] }
 
 # Chain
 alloy = { version = "0.3", features = ["full"] }

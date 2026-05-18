@@ -30,3 +30,5 @@ dotenvy = { workspace = true }
 anyhow = "1"
 argon2 = "0.5"
 jsonwebtoken = "9"
+qrcode = "0.14"
+image = "0.25"

@@ -13,6 +13,8 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview" },
   { href: "/products", label: "Products" },
+  { href: "/events", label: "Events" },
+  { href: "/qr-codes", label: "QR codes" },
   { href: "/anchors", label: "Anchors" },
   { href: "/api-keys", label: "API keys" },
   { href: "/settings", label: "Settings" },
