@@ -30,15 +30,34 @@ pub async fn register(
     Extension(brand_id): Extension<Uuid>,
     Json(body): Json<RegisterProductRequest>,
 ) -> Result<Json<Product>, AppError> {
-    let product = db::products::create(
+    // Resolve the plan first so the message we render on a limit
+    // rejection can name the plan. A missing subscription row is
+    // treated as Atelier — defensive default for any legacy brand the
+    // 0006 back-fill might have missed.
+    let subscription = db::subscriptions::get_by_brand(&state.db, brand_id).await?;
+    let plan = subscription
+        .as_ref()
+        .map(|s| s.plan)
+        .unwrap_or(common::Plan::Atelier);
+
+    let outcome = db::products::create_with_plan_check(
         &state.db,
         brand_id,
+        plan,
         &body.name,
         body.external_ref.as_deref(),
         body.metadata.as_ref(),
     )
     .await?;
-    Ok(Json(product))
+
+    match outcome {
+        db::products::RegisterOutcome::Created(product) => Ok(Json(product)),
+        db::products::RegisterOutcome::LimitExceeded { count, limit } => {
+            Err(AppError::PaymentRequired(format!(
+                "product limit reached ({count}/{limit}); upgrade your plan to register more"
+            )))
+        }
+    }
 }
 
 pub async fn get(

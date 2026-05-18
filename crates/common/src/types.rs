@@ -121,6 +121,55 @@ pub struct BrandAnchorView {
     pub anchored_at: DateTime<Utc>,
 }
 
+/// Subscription plan. Determines the brand's product registration limit.
+/// Atelier: 500. Maison: 10,000. Couture: unlimited.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum Plan {
+    Atelier,
+    Maison,
+    Couture,
+}
+
+impl Plan {
+    /// Product registration ceiling for the plan. `None` means unlimited.
+    pub fn product_limit(&self) -> Option<i64> {
+        match self {
+            Plan::Atelier => Some(500),
+            Plan::Maison => Some(10_000),
+            Plan::Couture => None,
+        }
+    }
+}
+
+/// Lifecycle state of a subscription. Mirrors Stripe's vocabulary so that
+/// webhook ingestion is a direct field copy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum SubscriptionStatus {
+    Active,
+    PastDue,
+    Canceled,
+    Trialing,
+}
+
+/// A brand's subscription record. One row per brand (enforced by a UNIQUE
+/// constraint on `brand_id`). Stripe identifiers are populated lazily when
+/// the brand actually upgrades through Checkout.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Subscription {
+    pub id: Uuid,
+    pub brand_id: Uuid,
+    pub plan: Plan,
+    pub status: SubscriptionStatus,
+    pub stripe_customer_id: Option<String>,
+    pub stripe_subscription_id: Option<String>,
+    pub current_period_end: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
 /// A batch of events anchored to Base mainnet.
 ///
 /// `tx_hash` and `block_number` are nullable to support the idempotent

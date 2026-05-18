@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/anchors",
   "/qr-codes",
   "/api-keys",
+  "/billing",
   "/settings",
 ];
 
@@ -35,6 +36,7 @@ export const config = {
     "/anchors/:path*",
     "/qr-codes/:path*",
     "/api-keys/:path*",
+    "/billing/:path*",
     "/settings/:path*",
   ],
 };

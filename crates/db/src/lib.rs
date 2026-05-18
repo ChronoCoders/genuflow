@@ -6,6 +6,8 @@ pub mod products;
 pub mod events;
 pub mod anchors;
 pub mod users;
+pub mod subscriptions;
+pub mod usage_records;
 
 use sqlx::PgPool;
 
