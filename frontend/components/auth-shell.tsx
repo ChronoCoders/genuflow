@@ -22,7 +22,7 @@ interface AuthShellProps {
 export function AuthShell({ title, subtitle, footer, children }: AuthShellProps) {
   return (
     <main className="min-h-screen md:grid md:grid-cols-2">
-      <aside className="relative hidden flex-col justify-between border-r border-ink-800 bg-ink-900 p-12 md:flex">
+      <aside className="relative hidden flex-col justify-between border-r border-white/5 bg-ink-900 p-12 md:flex">
         <Link
           href="/"
           className="relative z-10 font-serif text-3xl tracking-tight text-ink-50"
@@ -43,30 +43,30 @@ export function AuthShell({ title, subtitle, footer, children }: AuthShellProps)
           </p>
 
           <ul className="mt-10 space-y-3 text-sm text-ink-300">
-            <li className="flex items-start gap-3">
-              <span aria-hidden className="mt-1 text-accent">
-                ●
-              </span>
+            <li className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="block h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+              />
               <span>Cryptographic provenance per product</span>
             </li>
-            <li className="flex items-start gap-3">
-              <span aria-hidden className="mt-1 text-accent">
-                ●
-              </span>
+            <li className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="block h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+              />
               <span>On-chain anchoring every two hours</span>
             </li>
-            <li className="flex items-start gap-3">
-              <span aria-hidden className="mt-1 text-accent">
-                ●
-              </span>
+            <li className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="block h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+              />
               <span>Public verification, brand-private internals</span>
             </li>
           </ul>
         </div>
 
-        <div className="relative z-10 text-xs text-ink-500">
-          © Genuflow · BSL 1.1
-        </div>
       </aside>
 
       <section className="flex items-center justify-center px-6 py-12">
