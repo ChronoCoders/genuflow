@@ -27,11 +27,10 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(
-          err.status === 409
-            ? "An account with that email already exists."
-            : err.message,
-        );
+        // The backend distinguishes 409 cases in the message body
+        // ("a brand with that name already exists" vs "an account with
+        // that email already exists"), so surface it directly.
+        setError(err.message);
       } else {
         setError("Network error. Please try again.");
       }

@@ -167,8 +167,12 @@ async function request<T>(
     throw new ApiError(res.status, message || res.statusText);
   }
 
+  // Handle empty-body successes (e.g., 201 Created from /auth/register,
+  // 200 OK from /auth/login — both set a cookie and return no JSON).
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // --- Auth ---

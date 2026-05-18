@@ -3,12 +3,15 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: genuflow
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       POSTGRES_DB: genuflow
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Native Postgres is already on host port 5432, so the compose DB
+    # publishes to 5433 instead. The `api` service inside the compose
+    # network reaches it as `db:5432` regardless of the host mapping.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U genuflow"]
       interval: 5s
@@ -25,13 +28,19 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://genuflow:${POSTGRES_PASSWORD}@db:5432/genuflow
-      BASE_RPC_URL: ${BASE_RPC_URL}
-      ANCHOR_PRIVATE_KEY: ${ANCHOR_PRIVATE_KEY}
+      # Inside the compose network, the database hostname is the service name `db`.
+      DATABASE_URL: postgres://genuflow:${POSTGRES_PASSWORD:-changeme}@db:5432/genuflow
+      BASE_RPC_URL: ${BASE_RPC_URL:-https://sepolia.base.org}
+      ANCHOR_PRIVATE_KEY: ${ANCHOR_PRIVATE_KEY:-0000000000000000000000000000000000000000000000000000000000000001}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-do-not-use-in-production-32bytes}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
       API_PORT: 8080
-      RUST_LOG: info
+      RUST_LOG: ${RUST_LOG:-info,sqlx=warn}
+    # Host port 8080 is taken by another service on this machine (Redpanda
+    # Console), so we publish the container's 8080 to host 8081. Point the
+    # frontend's INTERNAL_API_URL at http://localhost:8081 to match.
     ports:
-      - "8080:8080"
+      - "8081:8080"
     deploy:
       resources:
         limits:
