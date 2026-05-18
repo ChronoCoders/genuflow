@@ -7,16 +7,30 @@ use axum::{
 };
 use common::AppError;
 use sha2::{Digest, Sha256};
+
+use crate::auth::jwt;
+use crate::middleware::session::session_cookie;
 use crate::state::AppState;
 
-/// Extract and validate X-API-Key header.
+/// Authenticate the requesting brand from either a session cookie (set by
+/// the dashboard login flow) or an `X-API-Key` header (used by
+/// machine-to-machine integrations). Whichever yields a `brand_id` first
+/// is accepted; if neither does, the request is rejected with 401.
 ///
-/// Resolves brand_id from key hash and injects it into request extensions.
+/// The handler downstream receives the `brand_id` as an `Extension<Uuid>`
+/// and does not need to know which auth path was used.
 pub async fn require_api_key(
     State(state): State<AppState>,
     mut req: Request,
     next: Next,
 ) -> Result<Response, AppError> {
+    if let Some(token) = session_cookie(&req) {
+        if let Ok(claims) = jwt::verify(&state.auth.jwt_secret, &token) {
+            req.extensions_mut().insert(claims.brand_id);
+            return Ok(next.run(req).await);
+        }
+    }
+
     let key = req
         .headers()
         .get("X-API-Key")

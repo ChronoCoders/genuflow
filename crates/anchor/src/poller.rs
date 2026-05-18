@@ -1,5 +1,7 @@
 #![deny(warnings)]
 
+use std::collections::HashMap;
+
 use chrono::Utc;
 use common::{AnchorBatch, AppError};
 use tracing::{info, warn};
@@ -81,6 +83,7 @@ async fn resolve_one(
                 ))
             })?;
             db::anchors::confirm(db, row.id, block_i64).await?;
+            record_brand_hashes(db, row.id).await?;
             info!(
                 batch_id = %row.id,
                 block_number = block_i64,
@@ -160,12 +163,44 @@ async fn submit_batch(
 
     let block_number = batch::await_confirmation(&config.rpc_url, &tx_hash).await?;
     db::anchors::confirm(db, batch_id, block_number).await?;
+    record_brand_hashes(db, batch_id).await?;
     info!(
         batch_id = %batch_id,
         tx_hash = %tx_hash,
         block_number,
         "anchor: batch confirmed"
     );
+
+    Ok(())
+}
+
+/// Compute and persist a per-brand SHA-256 over the brand's events in
+/// `batch_id`. One row per (batch, brand) is inserted into
+/// `anchor_brand_hashes`. Idempotent — safe to call more than once for
+/// the same batch.
+async fn record_brand_hashes(db: &db::Db, batch_id: Uuid) -> Result<(), AppError> {
+    let pairs = db::events::brand_event_pairs_for_batch(db, batch_id).await?;
+    if pairs.is_empty() {
+        // A batch with zero attached events should never reach `confirm`,
+        // but if it does, there's nothing to project — just return.
+        return Ok(());
+    }
+
+    let mut by_brand: HashMap<Uuid, Vec<Uuid>> = HashMap::new();
+    for pair in pairs {
+        by_brand.entry(pair.brand_id).or_default().push(pair.event_id);
+    }
+
+    for (brand_id, event_ids) in by_brand {
+        let brand_hash = batch::hash_event_ids(&event_ids);
+        db::anchors::insert_brand_hash(db, batch_id, brand_id, &brand_hash).await?;
+        info!(
+            batch_id = %batch_id,
+            brand_id = %brand_id,
+            events = event_ids.len(),
+            "anchor: recorded brand hash"
+        );
+    }
 
     Ok(())
 }

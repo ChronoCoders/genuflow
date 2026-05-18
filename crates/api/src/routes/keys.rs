@@ -4,7 +4,7 @@ use axum::{
     extract::{Extension, Path, State},
     Json,
 };
-use common::AppError;
+use common::{ApiKey, AppError};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -37,6 +37,18 @@ pub async fn create_key(
         id: api_key.id,
         key: plain,
     }))
+}
+
+/// `GET /v1/keys` — list every API key the authenticated brand has ever
+/// issued, including revoked ones (so the dashboard can show full history).
+/// `key_hash` is included in the response but is the hash, never the
+/// plain-text key.
+pub async fn list_keys(
+    State(state): State<AppState>,
+    Extension(brand_id): Extension<Uuid>,
+) -> Result<Json<Vec<ApiKey>>, AppError> {
+    let items = db::api_keys::list_by_brand(&state.db, brand_id).await?;
+    Ok(Json(items))
 }
 
 pub async fn revoke_key(

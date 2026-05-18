@@ -5,6 +5,7 @@ pub mod api_keys;
 pub mod products;
 pub mod events;
 pub mod anchors;
+pub mod users;
 
 use sqlx::PgPool;
 

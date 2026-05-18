@@ -15,7 +15,7 @@ pub struct VerifyResponse {
     pub product: common::PublicProduct,
     pub brand: common::Brand,
     pub events: Vec<common::ProvenanceEvent>,
-    pub latest_anchor: Option<common::AnchorBatch>,
+    pub latest_anchor: Option<common::BrandAnchorView>,
 }
 
 pub async fn verify(

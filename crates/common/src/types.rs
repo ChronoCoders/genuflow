@@ -14,6 +14,18 @@ pub struct Brand {
     pub created_at: DateTime<Utc>,
 }
 
+/// A dashboard user. `password_hash` is an argon2id PHC string and is
+/// never serialized over the wire (excluded from JSON).
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct User {
+    pub id: Uuid,
+    pub brand_id: Uuid,
+    pub email: String,
+    #[serde(skip_serializing)]
+    pub password_hash: String,
+    pub created_at: DateTime<Utc>,
+}
+
 /// An API key record (key_hash stored, plain text never persisted).
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ApiKey {
@@ -92,6 +104,21 @@ pub enum EventType {
 pub enum AnchorStatus {
     Pending,
     Confirmed,
+}
+
+/// A brand-scoped view of an anchor batch. Carries `brand_hash` — a
+/// SHA-256 over only the events in the batch that belong to the
+/// authenticated brand — instead of the global `records_hash`. This
+/// prevents two brands sharing a batch from correlating each other's
+/// anchor activity by comparing hashes.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct BrandAnchorView {
+    pub id: Uuid,
+    pub brand_hash: String,
+    pub tx_hash: Option<String>,
+    pub block_number: Option<i64>,
+    pub status: AnchorStatus,
+    pub anchored_at: DateTime<Utc>,
 }
 
 /// A batch of events anchored to Base mainnet.

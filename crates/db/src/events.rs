@@ -47,6 +47,76 @@ pub async fn get_by_id(db: &Db, id: Uuid) -> Result<Option<ProvenanceEvent>, sql
     .await
 }
 
+/// Count events recorded against products owned by `brand_id`.
+#[instrument(skip(db), err)]
+pub async fn count_by_brand(db: &Db, brand_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*)
+        FROM provenance_events e
+        JOIN products p ON p.id = e.product_id
+        WHERE p.brand_id = $1
+        "#,
+    )
+    .bind(brand_id)
+    .fetch_one(db)
+    .await?;
+    Ok(row.0)
+}
+
+/// A `(brand_id, event_id)` pair used by the anchor poller when computing
+/// per-brand subhashes for a confirmed batch.
+#[derive(Debug, sqlx::FromRow)]
+pub struct BrandEventPair {
+    pub brand_id: Uuid,
+    pub event_id: Uuid,
+}
+
+/// Return every event attached to `anchor_batch_id`, paired with the
+/// `brand_id` that owns the parent product. Used by the anchor poller to
+/// group events by brand before computing per-brand subhashes.
+#[instrument(skip(db), err)]
+pub async fn brand_event_pairs_for_batch(
+    db: &Db,
+    anchor_batch_id: Uuid,
+) -> Result<Vec<BrandEventPair>, sqlx::Error> {
+    sqlx::query_as::<_, BrandEventPair>(
+        r#"
+        SELECT p.brand_id AS brand_id, e.id AS event_id
+        FROM provenance_events e
+        JOIN products p ON p.id = e.product_id
+        WHERE e.anchor_batch_id = $1
+        "#,
+    )
+    .bind(anchor_batch_id)
+    .fetch_all(db)
+    .await
+}
+
+/// Fetch the most recent events across all products owned by `brand_id`.
+/// Used to populate the dashboard's "recent events" panel.
+#[instrument(skip(db), err)]
+pub async fn recent_by_brand(
+    db: &Db,
+    brand_id: Uuid,
+    limit: i64,
+) -> Result<Vec<ProvenanceEvent>, sqlx::Error> {
+    sqlx::query_as::<_, ProvenanceEvent>(
+        r#"
+        SELECT e.id, e.product_id, e.event_type, e.detail, e.recorded_at, e.anchor_batch_id
+        FROM provenance_events e
+        JOIN products p ON p.id = e.product_id
+        WHERE p.brand_id = $1
+        ORDER BY e.recorded_at DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(brand_id)
+    .bind(limit)
+    .fetch_all(db)
+    .await
+}
+
 /// List all events for `product_id`, oldest first (chronological provenance).
 #[instrument(skip(db), err)]
 pub async fn list_by_product(
