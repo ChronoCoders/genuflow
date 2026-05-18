@@ -51,6 +51,19 @@ async fn main() -> anyhow::Result<()> {
         anchor::run(anchor_config, db_clone).await;
     });
 
+    let stripe_config = std::env::var("STRIPE_SECRET_KEY").ok().map(|secret_key| {
+        state::StripeConfig {
+            secret_key,
+            webhook_secret: std::env::var("STRIPE_WEBHOOK_SECRET").ok(),
+            price_id_maison: std::env::var("STRIPE_PRICE_ID_MAISON").ok(),
+            price_id_couture: std::env::var("STRIPE_PRICE_ID_COUTURE").ok(),
+            http: reqwest::Client::new(),
+        }
+    });
+    if stripe_config.is_none() {
+        info!("STRIPE_SECRET_KEY not set — billing endpoints will run in placeholder mode");
+    }
+
     let state = state::AppState {
         db: pool,
         auth: Arc::new(state::AuthConfig {
@@ -58,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
             cookie_secure,
         }),
         public_base_url: Arc::new(public_base_url),
+        stripe: Arc::new(stripe_config),
     };
     let app = routes::router(state);
 

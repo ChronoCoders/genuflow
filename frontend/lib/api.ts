@@ -353,6 +353,46 @@ export async function getVerify(productId: string): Promise<VerifyResponse> {
   return request<VerifyResponse>(`/verify/${productId}`);
 }
 
+// --- Billing ---
+
+export type Plan = "atelier" | "maison" | "couture";
+export type SubscriptionStatus =
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "trialing";
+
+export interface BillingResponse {
+  plan: Plan;
+  status: SubscriptionStatus;
+  product_count: number;
+  /** null means unlimited (Couture). */
+  product_limit: number | null;
+  current_period_end: string | null;
+  stripe_configured: boolean;
+}
+
+export async function getBilling(
+  cookieHeader?: string,
+): Promise<BillingResponse> {
+  return request<BillingResponse>("/v1/billing", {}, cookieHeader);
+}
+
+export interface CreateCheckoutResponse {
+  url: string;
+  /** false when Stripe is not configured and the URL is a placeholder. */
+  stripe: boolean;
+}
+
+export async function createCheckoutSession(
+  plan: Exclude<Plan, "atelier">,
+): Promise<CreateCheckoutResponse> {
+  return request<CreateCheckoutResponse>("/v1/billing/create-checkout-session", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+}
+
 export interface TransferRequest {
   new_owner_email: string;
   note?: string | null;

@@ -32,3 +32,6 @@ argon2 = "0.5"
 jsonwebtoken = "9"
 qrcode = "0.14"
 image = "0.25"
+hmac = "0.12"
+subtle = "2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }

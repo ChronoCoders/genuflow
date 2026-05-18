@@ -10,7 +10,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use common::AppError;
+use common::{AppError, Plan, SubscriptionStatus};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -87,6 +87,12 @@ pub async fn register(
                 AppError::Database(e)
             }
         })?;
+
+    // Every new brand starts on the Atelier plan. The row is unique on
+    // brand_id, so the worst case for a duplicate registration is a 23505,
+    // which the brand-create above would already have surfaced.
+    db::subscriptions::create(&state.db, brand.id, Plan::Atelier, SubscriptionStatus::Active)
+        .await?;
 
     let token = jwt::sign(&state.auth.jwt_secret, user.id, brand.id)?;
     let cookie = build_session_cookie(&token, state.auth.cookie_secure, SESSION_TTL_SECS);

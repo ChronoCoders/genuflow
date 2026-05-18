@@ -3,11 +3,13 @@
 pub mod admin;
 pub mod anchors;
 pub mod auth;
+pub mod billing;
 pub mod dashboard;
 pub mod events;
 pub mod keys;
 pub mod products;
 pub mod verify;
+pub mod webhooks;
 
 use axum::{
     middleware::from_fn_with_state,
@@ -68,6 +70,11 @@ pub fn router(state: AppState) -> Router {
         .route("/products/:id/qr", get(products::qr))
         .route("/events", get(events::list))
         .route("/anchors", get(anchors::list))
+        .route("/billing", get(billing::get))
+        .route(
+            "/billing/create-checkout-session",
+            post(billing::create_checkout_session),
+        )
         .route_layer(from_fn_with_state(state.clone(), require_api_key));
 
     let admin = Router::new()
@@ -78,10 +85,13 @@ pub fn router(state: AppState) -> Router {
         .route("/:product_id", get(verify::verify))
         .route("/:product_id/transfer", post(verify::transfer));
 
+    let webhooks = Router::new().route("/stripe", post(webhooks::stripe));
+
     Router::new()
         .nest("/auth", auth)
         .nest("/v1", v1)
         .nest("/admin", admin)
         .nest("/verify", verify)
+        .nest("/webhooks", webhooks)
         .with_state(state)
 }

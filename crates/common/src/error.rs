@@ -23,6 +23,9 @@ pub enum AppError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    #[error("payment required: {0}")]
+    PaymentRequired(String),
+
     #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
 
@@ -37,6 +40,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
+            AppError::PaymentRequired(msg) => (StatusCode::PAYMENT_REQUIRED, msg.clone()),
             AppError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "database error".to_string(),
