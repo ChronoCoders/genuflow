@@ -352,3 +352,20 @@ export async function listAnchors(
 export async function getVerify(productId: string): Promise<VerifyResponse> {
   return request<VerifyResponse>(`/verify/${productId}`);
 }
+
+export interface TransferRequest {
+  new_owner_email: string;
+  note?: string | null;
+}
+
+/// Public, unauthenticated. Records a `transferred` event on a product
+/// that already has a `sold` event in its history.
+export async function transferOwnership(
+  productId: string,
+  body: TransferRequest,
+): Promise<ProvenanceEvent> {
+  return request<ProvenanceEvent>(`/verify/${productId}/transfer`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}

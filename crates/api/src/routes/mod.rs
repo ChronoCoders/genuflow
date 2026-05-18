@@ -74,7 +74,9 @@ pub fn router(state: AppState) -> Router {
         .route("/brands", post(admin::create_brand))
         .route_layer(from_fn_with_state(state.clone(), require_api_key));
 
-    let verify = Router::new().route("/:product_id", get(verify::verify));
+    let verify = Router::new()
+        .route("/:product_id", get(verify::verify))
+        .route("/:product_id/transfer", post(verify::transfer));
 
     Router::new()
         .nest("/auth", auth)
