@@ -1,9 +1,11 @@
 #![deny(warnings)]
 
+mod auth;
 mod middleware;
 mod routes;
 mod state;
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -25,6 +27,11 @@ async fn main() -> anyhow::Result<()> {
     let pool = sqlx::PgPool::connect(&database_url).await?;
     sqlx::migrate!("../../migrations").run(&pool).await?;
 
+    let jwt_secret = std::env::var("JWT_SECRET").context("JWT_SECRET must be set")?;
+    let cookie_secure = std::env::var("COOKIE_SECURE")
+        .map(|v| v != "false")
+        .unwrap_or(true);
+
     let rpc_url = std::env::var("BASE_RPC_URL").context("BASE_RPC_URL must be set")?;
     let private_key =
         std::env::var("ANCHOR_PRIVATE_KEY").context("ANCHOR_PRIVATE_KEY must be set")?;
@@ -40,7 +47,13 @@ async fn main() -> anyhow::Result<()> {
         anchor::run(anchor_config, db_clone).await;
     });
 
-    let state = state::AppState { db: pool };
+    let state = state::AppState {
+        db: pool,
+        auth: Arc::new(state::AuthConfig {
+            jwt_secret,
+            cookie_secure,
+        }),
+    };
     let app = routes::router(state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", api_port)).await?;

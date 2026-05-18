@@ -70,6 +70,18 @@ pub async fn get_by_id_for_brand(
     .await
 }
 
+/// Count products owned by `brand_id`.
+#[instrument(skip(db), err)]
+pub async fn count_by_brand(db: &Db, brand_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as(
+        r#"SELECT COUNT(*) FROM products WHERE brand_id = $1"#,
+    )
+    .bind(brand_id)
+    .fetch_one(db)
+    .await?;
+    Ok(row.0)
+}
+
 /// List products belonging to `brand_id`, newest first, with pagination.
 #[instrument(skip(db), err)]
 pub async fn list_by_brand(
