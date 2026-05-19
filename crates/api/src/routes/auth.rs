@@ -5,12 +5,12 @@
 use std::sync::OnceLock;
 
 use axum::{
-    extract::{Extension, State},
+    extract::{Extension, Path, State},
     http::{header::SET_COOKIE, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
-use common::{AppError, Plan, SubscriptionStatus};
+use common::{AppError, Plan, SubscriptionStatus, UserRole};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -37,6 +37,9 @@ pub struct MeResponse {
     pub brand_id: Uuid,
     pub email: String,
     pub brand_name: String,
+    pub brand_slug: String,
+    pub custom_domain: Option<String>,
+    pub role: UserRole,
 }
 
 /// `POST /auth/register` — create a brand + first user, then sign a session.
@@ -78,7 +81,7 @@ pub async fn register(
             }
         })?;
 
-    let user = db::users::create(&state.db, brand.id, &email, &password_hash)
+    let user = db::users::create(&state.db, brand.id, &email, &password_hash, UserRole::Owner)
         .await
         .map_err(|e| {
             if is_unique_violation(&e) {
@@ -154,6 +157,62 @@ fn dummy_hash() -> &'static String {
     })
 }
 
+#[derive(Deserialize)]
+pub struct AcceptInviteRequest {
+    pub password: String,
+}
+
+/// `POST /auth/accept-invite/:token` — public, no auth. Exchange an
+/// invite token for a new user account.
+///
+/// The invite is *claimed atomically* via a single `UPDATE ... RETURNING`:
+/// the same token cannot be redeemed by two concurrent submissions, and
+/// expired/already-accepted invites are filtered out by the same
+/// statement. A non-claimable token returns a single generic 400 — we
+/// do not oracle whether it was invalid, expired, or already used.
+///
+/// If user creation fails after the claim (most realistically a 23505
+/// from `users.email`), the invite remains marked accepted. That is the
+/// correct outcome for the conflict case — the email is already a
+/// user, so the invite is rightly burned.
+pub async fn accept_invite(
+    State(state): State<AppState>,
+    Path(token): Path<uuid::Uuid>,
+    Json(body): Json<AcceptInviteRequest>,
+) -> Result<Response, AppError> {
+    if body.password.len() < 12 {
+        return Err(AppError::BadRequest(
+            "password must be at least 12 characters".into(),
+        ));
+    }
+
+    let invite = db::invites::claim_by_token(&state.db, token)
+        .await?
+        .ok_or_else(|| {
+            AppError::BadRequest("invite is invalid, expired, or already accepted".into())
+        })?;
+
+    let password_hash = password::hash(&body.password)?;
+
+    let user =
+        db::users::create(&state.db, invite.brand_id, &invite.email, &password_hash, invite.role)
+            .await
+            .map_err(|e| {
+                if is_unique_violation(&e) {
+                    AppError::Conflict("an account with that email already exists".into())
+                } else {
+                    AppError::Database(e)
+                }
+            })?;
+
+    let jwt_token = jwt::sign(&state.auth.jwt_secret, user.id, invite.brand_id)?;
+    let cookie = build_session_cookie(&jwt_token, state.auth.cookie_secure, SESSION_TTL_SECS);
+
+    let mut response = StatusCode::CREATED.into_response();
+    set_cookie(&mut response, &cookie)?;
+    Ok(response)
+}
+
 /// `POST /auth/logout` — clear the session cookie. Always 204.
 pub async fn logout(State(state): State<AppState>) -> Result<Response, AppError> {
     let cookie = clear_session_cookie(state.auth.cookie_secure);
@@ -182,6 +241,9 @@ pub async fn me(
         brand_id: brand.id,
         email: user.email,
         brand_name: brand.name,
+        brand_slug: brand.slug,
+        custom_domain: brand.custom_domain,
+        role: user.role,
     }))
 }
 

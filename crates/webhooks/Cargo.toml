@@ -1,0 +1,21 @@
+[package]
+name = "webhooks"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+db = { path = "../db" }
+tokio = { workspace = true }
+futures = "0.3"
+sqlx = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+hmac = "0.12"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }

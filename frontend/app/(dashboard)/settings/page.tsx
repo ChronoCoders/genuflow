@@ -3,10 +3,13 @@ import { PageHeader } from "@/components/page-header";
 import { me } from "@/lib/api";
 import { sessionCookieHeader } from "@/lib/server-api";
 
+import { DomainSection } from "./domain-section";
+
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await me(sessionCookieHeader());
+  const isOwner = user.role === "owner";
 
   return (
     <>
@@ -28,14 +31,18 @@ export default async function SettingsPage() {
           </p>
         </Card>
 
+        {isOwner ? (
+          <DomainSection initialDomain={user.custom_domain} />
+        ) : null}
+
         <Card>
           <div className="text-xs uppercase tracking-wider text-ink-500">
             Account
           </div>
           <div className="mt-3 text-ink-100">{user.email}</div>
           <p className="mt-2 text-xs text-ink-500">
-            Password reset and team invitations are planned for a future
-            release.
+            Your role on this brand:{" "}
+            <span className="text-ink-200">{user.role}</span>.
           </p>
         </Card>
 
@@ -46,11 +53,15 @@ export default async function SettingsPage() {
           <dl className="mt-3 space-y-2 text-xs">
             <div className="flex gap-3">
               <dt className="w-24 text-ink-500">User ID</dt>
-              <dd className="break-all font-mono text-ink-300">{user.user_id}</dd>
+              <dd className="break-all font-mono text-ink-300">
+                {user.user_id}
+              </dd>
             </div>
             <div className="flex gap-3">
               <dt className="w-24 text-ink-500">Brand ID</dt>
-              <dd className="break-all font-mono text-ink-300">{user.brand_id}</dd>
+              <dd className="break-all font-mono text-ink-300">
+                {user.brand_id}
+              </dd>
             </div>
           </dl>
         </Card>

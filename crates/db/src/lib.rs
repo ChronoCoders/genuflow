@@ -8,6 +8,10 @@ pub mod anchors;
 pub mod users;
 pub mod subscriptions;
 pub mod usage_records;
+pub mod webhook_endpoints;
+pub mod webhook_deliveries;
+pub mod webhooks;
+pub mod invites;
 
 use sqlx::PgPool;
 

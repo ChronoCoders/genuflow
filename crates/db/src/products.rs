@@ -18,6 +18,30 @@ pub enum RegisterOutcome {
     LimitExceeded { count: i64, limit: i64 },
 }
 
+/// One validated item ready for bulk insertion. The handler is
+/// responsible for upstream validation (name length, metadata shape,
+/// external_ref bounds); this struct represents the post-validation
+/// shape passed down to the DB layer.
+#[derive(Debug, Clone)]
+pub struct BulkItem {
+    pub name: String,
+    pub external_ref: Option<String>,
+    pub metadata: Option<Value>,
+}
+
+/// Outcome of a bulk plan-checked insert. `LimitExceeded` rolls back the
+/// transaction — no products are created if the batch would push the
+/// brand over its plan ceiling.
+#[derive(Debug)]
+pub enum BulkOutcome {
+    Created(Vec<Product>),
+    LimitExceeded {
+        count: i64,
+        limit: i64,
+        requested: i64,
+    },
+}
+
 /// Atomic product registration with plan-limit enforcement.
 ///
 /// Wraps the count check and the insert in a single transaction. The
@@ -108,6 +132,71 @@ pub async fn create(
     .bind(metadata)
     .fetch_one(db)
     .await
+}
+
+/// Atomic bulk product insert with plan-limit enforcement.
+///
+/// All items are inserted in a single transaction. The brand's
+/// subscription row is taken with `SELECT ... FOR UPDATE` at the top of
+/// the transaction; concurrent product inserts for the same brand block
+/// on that lock until this transaction commits or rolls back, so the
+/// limit check cannot race against another insert.
+///
+/// If the requested batch would push the brand past its plan ceiling,
+/// the transaction rolls back and the function returns `LimitExceeded`
+/// — no products are created. This is intentional: bulk imports are
+/// all-or-nothing at the plan boundary.
+#[instrument(skip(db, items), fields(count = items.len()), err)]
+pub async fn bulk_insert_with_plan_check(
+    db: &Db,
+    brand_id: Uuid,
+    plan: Plan,
+    items: &[BulkItem],
+) -> Result<BulkOutcome, sqlx::Error> {
+    let requested = items.len() as i64;
+
+    let mut tx = db.begin().await?;
+
+    sqlx::query("SELECT id FROM subscriptions WHERE brand_id = $1 FOR UPDATE")
+        .bind(brand_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+    if let Some(limit) = plan.product_limit() {
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM products WHERE brand_id = $1")
+                .bind(brand_id)
+                .fetch_one(&mut *tx)
+                .await?;
+        if row.0 + requested > limit {
+            return Ok(BulkOutcome::LimitExceeded {
+                count: row.0,
+                limit,
+                requested,
+            });
+        }
+    }
+
+    let mut created = Vec::with_capacity(items.len());
+    for item in items {
+        let product = sqlx::query_as::<_, Product>(
+            r#"
+            INSERT INTO products (brand_id, external_ref, name, metadata)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, brand_id, external_ref, name, metadata, created_at
+            "#,
+        )
+        .bind(brand_id)
+        .bind(item.external_ref.as_deref())
+        .bind(&item.name)
+        .bind(item.metadata.as_ref())
+        .fetch_one(&mut *tx)
+        .await?;
+        created.push(product);
+    }
+
+    tx.commit().await?;
+    Ok(BulkOutcome::Created(created))
 }
 
 /// Fetch a product by id. Returns `None` if no such product exists.

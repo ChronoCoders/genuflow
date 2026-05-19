@@ -51,6 +51,11 @@ async fn main() -> anyhow::Result<()> {
         anchor::run(anchor_config, db_clone).await;
     });
 
+    let db_clone = pool.clone();
+    tokio::spawn(async move {
+        webhooks::run(webhooks::WebhookConfig::default(), db_clone).await;
+    });
+
     let stripe_config = std::env::var("STRIPE_SECRET_KEY").ok().map(|secret_key| {
         state::StripeConfig {
             secret_key,

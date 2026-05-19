@@ -17,6 +17,8 @@ const NAV: NavItem[] = [
   { href: "/qr-codes", label: "QR codes" },
   { href: "/anchors", label: "Anchors" },
   { href: "/api-keys", label: "API keys" },
+  { href: "/webhooks", label: "Webhooks" },
+  { href: "/team", label: "Team" },
   { href: "/billing", label: "Billing" },
   { href: "/settings", label: "Settings" },
 ];

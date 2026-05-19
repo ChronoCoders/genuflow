@@ -10,12 +10,19 @@ use common::AppError;
 use crate::auth::{jwt, UserId, SESSION_COOKIE};
 use crate::state::AppState;
 
-/// Require a valid session cookie. Injects both the `brand_id` (as `Uuid`)
-/// and the `UserId` into request extensions on success.
+/// Require a valid session cookie. Injects `brand_id` (`Uuid`),
+/// `UserId`, and the user's `UserRole` into request extensions on
+/// success.
 ///
-/// Used by routes that specifically need the human-user identity, like
-/// `/auth/me`. Routes that only need a brand should use the composed
-/// `require_api_key` middleware instead.
+/// The role is read fresh from the database on every request so that a
+/// role change (PATCH /v1/team/:id/role) takes effect immediately
+/// without waiting for the session JWT to roll over. The user's own
+/// JWT contains only sub + brand_id; role is never encoded in the
+/// token itself.
+///
+/// Used by routes that specifically need the human-user identity,
+/// like `/auth/me` and `/v1/team/*`. Routes that only need a brand
+/// should use the composed `require_api_key` middleware instead.
 pub async fn require_session(
     State(state): State<AppState>,
     mut req: Request,
@@ -23,8 +30,13 @@ pub async fn require_session(
 ) -> Result<Response, AppError> {
     let token = session_cookie(&req).ok_or(AppError::Unauthorized)?;
     let claims = jwt::verify(&state.auth.jwt_secret, &token)?;
+    let user = db::users::get_by_id(&state.db, claims.sub)
+        .await?
+        .ok_or(AppError::Unauthorized)?;
+
     req.extensions_mut().insert(claims.brand_id);
     req.extensions_mut().insert(UserId(claims.sub));
+    req.extensions_mut().insert(user.role);
     Ok(next.run(req).await)
 }
 

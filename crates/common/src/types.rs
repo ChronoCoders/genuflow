@@ -11,6 +11,11 @@ pub struct Brand {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
+    /// Hostname of the brand's own verification domain, e.g.
+    /// `verify.luxuryhouse.com`. `None` means the brand uses the
+    /// default Genuflow-hosted verify path. Stored bare — no protocol,
+    /// no path, no port.
+    pub custom_domain: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -23,6 +28,37 @@ pub struct User {
     pub email: String,
     #[serde(skip_serializing)]
     pub password_hash: String,
+    pub role: UserRole,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Role of a user within their brand. Roles form a strict ordering —
+/// owner > admin > member — but the application never relies on that
+/// ordering directly; permissions are checked by matching the variant
+/// explicitly so role changes here cannot silently grant authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum UserRole {
+    Owner,
+    Admin,
+    Member,
+}
+
+/// A pending or accepted team invitation. `token` is the secret material
+/// exchanged at `POST /auth/accept-invite/:token`; we omit it from JSON
+/// responses so a list-pending endpoint cannot leak unaccepted secrets
+/// back to the dashboard.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Invite {
+    pub id: Uuid,
+    pub brand_id: Uuid,
+    pub email: String,
+    pub role: UserRole,
+    #[serde(skip_serializing)]
+    pub token: Uuid,
+    pub expires_at: DateTime<Utc>,
+    pub accepted_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -167,6 +203,46 @@ pub struct Subscription {
     pub stripe_customer_id: Option<String>,
     pub stripe_subscription_id: Option<String>,
     pub current_period_end: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// A webhook endpoint registered by a brand. The `secret` is HMAC-SHA256
+/// signing material; it is presented once at creation time (alongside the
+/// rest of the record) and otherwise omitted from JSON responses.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct WebhookEndpoint {
+    pub id: Uuid,
+    pub brand_id: Uuid,
+    pub url: String,
+    #[serde(skip_serializing)]
+    pub secret: String,
+    pub events: Vec<String>,
+    pub active: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Lifecycle state of a single webhook delivery attempt.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum WebhookDeliveryStatus {
+    Pending,
+    Delivered,
+    Failed,
+}
+
+/// A single delivery attempt for a webhook endpoint. Rows are inserted by
+/// the producer side (event handlers, anchor poller) and consumed by the
+/// background delivery service.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct WebhookDelivery {
+    pub id: Uuid,
+    pub webhook_endpoint_id: Uuid,
+    pub event_type: String,
+    pub payload: Value,
+    pub status: WebhookDeliveryStatus,
+    pub attempts: i32,
+    pub last_attempted_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
