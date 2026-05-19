@@ -12,7 +12,9 @@ const TOPICS = [
 
 type Mode =
   | { kind: "idle" }
-  | { kind: "submitted"; mailto: string };
+  | { kind: "submitting" }
+  | { kind: "success" }
+  | { kind: "error"; message: string };
 
 export function ContactForm() {
   const [mode, setMode] = useState<Mode>({ kind: "idle" });
@@ -22,25 +24,46 @@ export function ContactForm() {
   const [topic, setTopic] = useState(TOPICS[0]);
   const [message, setMessage] = useState("");
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const body = [
-      `Name: ${name}`,
-      `Email: ${email}`,
-      `Brand / company: ${company}`,
-      `Topic: ${topic}`,
-      "",
-      message,
-    ].join("\n");
-    const subject = `Genuflow inquiry — ${topic}`;
-    const mailto = `mailto:hello@genuflow.com?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setMode({ kind: "submitted", mailto });
+    setMode({ kind: "submitting" });
+
+    const subject = company.trim()
+      ? `${topic} — ${company.trim()}`
+      : topic;
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          subject,
+          message: message.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        let detail = "Something went wrong. Please try again.";
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body.error) detail = body.error;
+        } catch {
+          // body wasn't JSON
+        }
+        setMode({ kind: "error", message: detail });
+        return;
+      }
+      setMode({ kind: "success" });
+    } catch (err) {
+      const detail =
+        err instanceof Error ? err.message : "Network error. Please try again.";
+      setMode({ kind: "error", message: detail });
+    }
   }
 
-  if (mode.kind === "submitted") {
+  if (mode.kind === "success") {
     return (
       <div className="rounded-xl border border-accent/30 bg-accent/5 p-10 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-accent/40 bg-accent/10 text-accent">
@@ -58,28 +81,19 @@ export function ContactForm() {
           </svg>
         </div>
         <h3 className="mt-6 font-serif text-2xl text-ink-50">
-          Your email client should open.
+          Message sent.
         </h3>
         <p className="mt-3 text-sm text-ink-300">
-          If nothing happened,{" "}
-          <a
-            href={mode.mailto}
-            className="text-accent hover:text-accent-hover"
-          >
-            click here to compose manually
-          </a>
-          , or write to{" "}
-          <a
-            href="mailto:hello@genuflow.com"
-            className="text-accent hover:text-accent-hover"
-          >
-            hello@genuflow.com
-          </a>
-          .
+          We answer founders and creative directors personally, usually
+          within the business day. A copy was sent to{" "}
+          <span className="text-ink-100">{email || "your address"}</span>.
         </p>
       </div>
     );
   }
+
+  const submitting = mode.kind === "submitting";
+  const error = mode.kind === "error" ? mode.message : null;
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -91,7 +105,8 @@ export function ContactForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            disabled={submitting}
+            className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
           />
         </Field>
         <Field label="Email">
@@ -101,7 +116,8 @@ export function ContactForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            disabled={submitting}
+            className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
           />
         </Field>
       </div>
@@ -113,7 +129,8 @@ export function ContactForm() {
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           autoComplete="organization"
-          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          disabled={submitting}
+          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
         />
       </Field>
 
@@ -121,7 +138,8 @@ export function ContactForm() {
         <select
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          disabled={submitting}
+          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
         >
           {TOPICS.map((t) => (
             <option key={t} value={t}>
@@ -137,9 +155,13 @@ export function ContactForm() {
           rows={6}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          maxLength={5000}
+          disabled={submitting}
+          className="block w-full rounded-md border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-ink-50 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-60"
         />
       </Field>
+
+      {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-ink-500">
@@ -147,9 +169,10 @@ export function ContactForm() {
         </p>
         <button
           type="submit"
-          className="inline-flex items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-ink-50 transition hover:bg-accent-hover"
+          disabled={submitting}
+          className="inline-flex items-center justify-center rounded-md bg-accent px-6 py-3 text-sm font-medium text-ink-50 transition hover:bg-accent-hover disabled:opacity-60"
         >
-          Send message
+          {submitting ? "Sending…" : "Send message"}
         </button>
       </div>
     </form>
