@@ -132,22 +132,6 @@ export default function MarketingHome() {
 
       <section className="border-b border-white/5 bg-ink-900/40">
         <div className="mx-auto w-full max-w-7xl px-6 py-24">
-          <Eyebrow>What our partners say</Eyebrow>
-          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2">
-            <Quote
-              quote="We had spent two years debating which serial number system to roll out. Genuflow replaced the question. Our customers see the same record we see, and we never have to mail a certificate again."
-              attribution="Creative Director, Italian leather house"
-            />
-            <Quote
-              quote="The DPP deadline is what brought us here, but the resale market is what kept us. Every transfer recorded is a future customer we don't lose to gray-market platforms."
-              attribution="Head of Sustainability, French ready-to-wear maison"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-white/5">
-        <div className="mx-auto w-full max-w-7xl px-6 py-24">
           <div className="grid grid-cols-1 gap-16 md:grid-cols-12">
             <div className="md:col-span-5">
               <SectionTitle
@@ -242,21 +226,3 @@ function PricePreview({
   );
 }
 
-function Quote({
-  quote,
-  attribution,
-}: {
-  quote: string;
-  attribution: string;
-}) {
-  return (
-    <figure className="rounded-xl border border-white/5 bg-ink-950 p-8">
-      <blockquote className="font-serif text-2xl leading-snug text-ink-100">
-        &ldquo;{quote}&rdquo;
-      </blockquote>
-      <figcaption className="mt-6 text-xs uppercase tracking-[0.24em] text-ink-500">
-        — {attribution}
-      </figcaption>
-    </figure>
-  );
-}
