@@ -1,5 +1,6 @@
 import { BannerImage } from "@/components/marketing/hero-image";
 import { CTABand, Eyebrow, PageHero } from "@/components/marketing/section";
+import { StatGrid } from "@/components/marketing/stat-grid";
 
 export const metadata = {
   title: "Luxury goods — Genuflow",
@@ -19,6 +20,31 @@ export default function LuxuryUseCase() {
       <BannerImage
         src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1920&q=80"
         alt="Hands of a leather artisan stitching a handbag in an atelier"
+      />
+
+      <StatGrid
+        eyebrow="The numbers"
+        title={<>The scale of the counterfeit market is not subtle.</>}
+        stats={[
+          {
+            value: "3.3%",
+            label:
+              "of world trade is counterfeit and pirated goods. The OECD's latest joint study with EUIPO puts the cross-border total at roughly this share — the domestic figure is higher.",
+            source: "OECD-EUIPO",
+          },
+          {
+            value: "$450B+",
+            label:
+              "estimated annual market value of counterfeit and pirated goods worldwide, across every category — and growing faster than legitimate trade.",
+            source: "Industry analyst consensus",
+          },
+          {
+            value: "1 in 5",
+            label:
+              "luxury goods purchased through online channels turns out to be counterfeit on inspection. The visual gap with the originals has closed.",
+            source: "Authentication-platform reporting",
+          },
+        ]}
       />
 
       <section className="border-b border-white/5">

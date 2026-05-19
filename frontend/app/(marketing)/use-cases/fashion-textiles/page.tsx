@@ -1,5 +1,6 @@
 import { BannerImage } from "@/components/marketing/hero-image";
 import { CTABand, Eyebrow, PageHero } from "@/components/marketing/section";
+import { StatGrid } from "@/components/marketing/stat-grid";
 
 export const metadata = {
   title: "Fashion & textiles — Genuflow",
@@ -25,6 +26,25 @@ export default function FashionTextilesUseCase() {
       <BannerImage
         src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80"
         alt="Macro detail of woven textile fabric"
+      />
+
+      <StatGrid
+        eyebrow="The numbers"
+        title={<>Regulation is coming; consumers are already there.</>}
+        stats={[
+          {
+            value: "2029",
+            label:
+              "the year by which the EU Digital Product Passport becomes mandatory for the textile category, under delegated acts of the Ecodesign for Sustainable Products Regulation.",
+            source: "European Commission",
+          },
+          {
+            value: "73%",
+            label:
+              "of consumers say they want full transparency on materials, origin, and production conditions before purchase. The brands that lead in transparency take share.",
+            source: "Consumer-sentiment surveys",
+          },
+        ]}
       />
 
       <section className="border-b border-white/5">
