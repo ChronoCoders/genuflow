@@ -24,6 +24,13 @@ const COMPANY = [
   { href: "/login", label: "Sign in" },
 ];
 
+const LEGAL = [
+  { href: "/legal/privacy", label: "Privacy" },
+  { href: "/legal/terms", label: "Terms" },
+  { href: "/legal/cookies", label: "Cookies" },
+  { href: "/legal/gdpr", label: "GDPR" },
+];
+
 export function MarketingFooter() {
   return (
     <footer className="border-t border-white/5 bg-ink-950">
@@ -48,6 +55,7 @@ export function MarketingFooter() {
         <div className="mt-12 grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 md:col-span-2" />
           <FooterColumn title="Company" links={COMPANY} />
+          <FooterColumn title="Legal" links={LEGAL} />
         </div>
 
         <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-white/5 pt-8 text-xs text-ink-500 md:flex-row md:items-center">
