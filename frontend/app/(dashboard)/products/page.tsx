@@ -8,6 +8,8 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/table";
 import { listProducts, type Product } from "@/lib/api";
 import { sessionCookieHeader } from "@/lib/server-api";
 
+import { ImportButton } from "./import-modal";
+
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
@@ -47,7 +49,12 @@ export default async function ProductsPage({
     );
   }
 
-  const action = <Button href="/products/new">Register product</Button>;
+  const action = (
+    <div className="flex gap-2">
+      <ImportButton />
+      <Button href="/products/new">Register product</Button>
+    </div>
+  );
 
   if (result.items.length === 0 && page === 0) {
     return (
@@ -56,7 +63,12 @@ export default async function ProductsPage({
         <EmptyState
           title="No products yet"
           body="Register your first product to start recording provenance."
-          action={<Button href="/products/new">Register product</Button>}
+          action={
+            <div className="flex justify-center gap-2">
+              <ImportButton />
+              <Button href="/products/new">Register product</Button>
+            </div>
+          }
         />
       </>
     );

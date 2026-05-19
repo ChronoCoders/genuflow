@@ -98,5 +98,18 @@ pub async fn record(
         body.detail.as_ref(),
     )
     .await?;
+
+    let payload = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
+    if let Err(e) = db::webhooks::enqueue(
+        &state.db,
+        brand_id,
+        db::webhooks::events::EVENT_RECORDED,
+        &payload,
+    )
+    .await
+    {
+        tracing::warn!(error = %e, brand_id = %brand_id, "failed to enqueue event.recorded webhook");
+    }
+
     Ok(Json(event))
 }

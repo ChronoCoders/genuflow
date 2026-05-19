@@ -52,6 +52,7 @@ export interface Brand {
   id: string;
   name: string;
   slug: string;
+  custom_domain: string | null;
   created_at: string;
 }
 
@@ -116,6 +117,9 @@ export interface MeResponse {
   brand_id: string;
   email: string;
   brand_name: string;
+  brand_slug: string;
+  custom_domain: string | null;
+  role: UserRole;
 }
 
 export interface DashboardMetrics {
@@ -252,6 +256,149 @@ export async function createProduct(
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export interface BulkProductItem {
+  name: string;
+  external_ref?: string | null;
+  metadata?: unknown | null;
+}
+
+export interface BulkFailure {
+  index: number;
+  reason: string;
+}
+
+export interface BulkProductResponse {
+  created: number;
+  products: Product[];
+  failed: BulkFailure[];
+}
+
+export async function bulkImportJson(
+  items: BulkProductItem[],
+): Promise<BulkProductResponse> {
+  return request<BulkProductResponse>("/v1/products/bulk", {
+    method: "POST",
+    body: JSON.stringify(items),
+  });
+}
+
+/// Bulk import from a CSV file. The request is multipart/form-data with
+/// a single `file` field; do NOT set Content-Type — the browser fills it
+/// in with the correct multipart boundary automatically.
+// --- Team ---
+
+export type UserRole = "owner" | "admin" | "member";
+
+export interface TeamMember {
+  id: string;
+  brand_id: string;
+  email: string;
+  role: UserRole;
+  created_at: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  brand_id: string;
+  email: string;
+  role: UserRole;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+export interface TeamResponse {
+  members: TeamMember[];
+  invites: TeamInvite[];
+}
+
+export interface CreateInviteResponse {
+  id: string;
+  brand_id: string;
+  email: string;
+  role: UserRole;
+  expires_at: string;
+  created_at: string;
+  /** Shown once. Use to build the accept-invite URL. */
+  token: string;
+}
+
+export async function getTeam(cookieHeader?: string): Promise<TeamResponse> {
+  return request<TeamResponse>("/v1/team/", {}, cookieHeader);
+}
+
+export async function inviteMember(
+  email: string,
+  role: Exclude<UserRole, "owner">,
+): Promise<CreateInviteResponse> {
+  return request<CreateInviteResponse>("/v1/team/invite", {
+    method: "POST",
+    body: JSON.stringify({ email, role }),
+  });
+}
+
+export async function revokeInvite(id: string): Promise<void> {
+  await request<void>(`/v1/team/invite/${id}`, { method: "DELETE" });
+}
+
+export async function removeMember(userId: string): Promise<void> {
+  await request<void>(`/v1/team/${userId}`, { method: "DELETE" });
+}
+
+export async function changeRole(
+  userId: string,
+  role: UserRole,
+): Promise<void> {
+  await request<void>(`/v1/team/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function acceptInvite(
+  token: string,
+  password: string,
+): Promise<void> {
+  await request<void>(`/auth/accept-invite/${token}`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+// --- Settings ---
+
+export async function setCustomDomain(
+  custom_domain: string | null,
+): Promise<Brand> {
+  return request<Brand>("/v1/settings/domain", {
+    method: "PUT",
+    body: JSON.stringify({ custom_domain }),
+  });
+}
+
+export async function bulkImportCsv(file: File): Promise<BulkProductResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/v1/products/bulk/csv", {
+    method: "POST",
+    credentials: "include",
+    body: form,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    let message = body;
+    try {
+      const parsed = JSON.parse(body) as { error?: string };
+      if (parsed.error) message = parsed.error;
+    } catch {
+      // body wasn't JSON
+    }
+    throw new ApiError(res.status, message || res.statusText);
+  }
+  return (await res.json()) as BulkProductResponse;
 }
 
 // BACKEND-NEEDED: GET /v1/products/:id/events
@@ -391,6 +538,85 @@ export async function createCheckoutSession(
     method: "POST",
     body: JSON.stringify({ plan }),
   });
+}
+
+// --- Webhooks ---
+
+export type WebhookEventType =
+  | "product.registered"
+  | "event.recorded"
+  | "anchor.confirmed";
+
+export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
+  "product.registered",
+  "event.recorded",
+  "anchor.confirmed",
+];
+
+export interface WebhookEndpoint {
+  id: string;
+  brand_id: string;
+  url: string;
+  events: WebhookEventType[];
+  active: boolean;
+  created_at: string;
+  // `secret` is intentionally omitted; the backend strips it from
+  // serialization on every endpoint except the create response.
+}
+
+export interface CreateWebhookResponse {
+  id: string;
+  brand_id: string;
+  url: string;
+  events: WebhookEventType[];
+  active: boolean;
+  created_at: string;
+  /** Returned exactly once at creation time. */
+  secret: string;
+}
+
+export type WebhookDeliveryStatus = "pending" | "delivered" | "failed";
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_endpoint_id: string;
+  event_type: WebhookEventType;
+  payload: unknown;
+  status: WebhookDeliveryStatus;
+  attempts: number;
+  last_attempted_at: string | null;
+  created_at: string;
+}
+
+export async function listWebhookEndpoints(
+  cookieHeader?: string,
+): Promise<WebhookEndpoint[]> {
+  return request<WebhookEndpoint[]>("/v1/webhooks", {}, cookieHeader);
+}
+
+export async function createWebhookEndpoint(
+  url: string,
+  events: WebhookEventType[],
+): Promise<CreateWebhookResponse> {
+  return request<CreateWebhookResponse>("/v1/webhooks", {
+    method: "POST",
+    body: JSON.stringify({ url, events }),
+  });
+}
+
+export async function deactivateWebhookEndpoint(id: string): Promise<void> {
+  await request<void>(`/v1/webhooks/${id}`, { method: "DELETE" });
+}
+
+export async function listWebhookDeliveries(
+  endpointId: string,
+  cookieHeader?: string,
+): Promise<WebhookDelivery[]> {
+  return request<WebhookDelivery[]>(
+    `/v1/webhooks/${endpointId}/deliveries`,
+    {},
+    cookieHeader,
+  );
 }
 
 export interface TransferRequest {

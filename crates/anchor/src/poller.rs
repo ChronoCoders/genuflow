@@ -200,6 +200,22 @@ async fn record_brand_hashes(db: &db::Db, batch_id: Uuid) -> Result<(), AppError
             events = event_ids.len(),
             "anchor: recorded brand hash"
         );
+
+        // Best-effort webhook fan-out. A failed enqueue does not roll
+        // back the anchor — the on-chain record is the source of
+        // truth; webhook delivery is downstream.
+        let payload = serde_json::json!({
+            "batch_id": batch_id,
+            "brand_id": brand_id,
+            "brand_hash": brand_hash,
+            "event_count": event_ids.len(),
+        });
+        if let Err(e) =
+            db::webhooks::enqueue(db, brand_id, db::webhooks::events::ANCHOR_CONFIRMED, &payload)
+                .await
+        {
+            tracing::warn!(error = %e, brand_id = %brand_id, "failed to enqueue anchor.confirmed webhook");
+        }
     }
 
     Ok(())

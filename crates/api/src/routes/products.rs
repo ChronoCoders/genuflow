@@ -51,7 +51,23 @@ pub async fn register(
     .await?;
 
     match outcome {
-        db::products::RegisterOutcome::Created(product) => Ok(Json(product)),
+        db::products::RegisterOutcome::Created(product) => {
+            // Best-effort webhook fan-out. A failed enqueue does not
+            // fail the request — the row was committed before this
+            // point and is the canonical record.
+            let payload = serde_json::to_value(&product).unwrap_or(serde_json::Value::Null);
+            if let Err(e) = db::webhooks::enqueue(
+                &state.db,
+                brand_id,
+                db::webhooks::events::PRODUCT_REGISTERED,
+                &payload,
+            )
+            .await
+            {
+                tracing::warn!(error = %e, brand_id = %brand_id, "failed to enqueue product.registered webhook");
+            }
+            Ok(Json(product))
+        }
         db::products::RegisterOutcome::LimitExceeded { count, limit } => {
             Err(AppError::PaymentRequired(format!(
                 "product limit reached ({count}/{limit}); upgrade your plan to register more"
