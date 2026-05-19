@@ -1,3 +1,4 @@
+import { DeepDive } from "@/components/marketing/deep-dive";
 import { CTABand, Eyebrow, PageHero } from "@/components/marketing/section";
 import { StepDiagram } from "@/components/marketing/step-diagram";
 
@@ -30,6 +31,20 @@ export default function HowItWorks() {
 
           <div className="mt-16">
             <StepDiagram />
+          </div>
+
+          <div className="mt-20">
+            <Eyebrow>Deep dive</Eyebrow>
+            <h3 className="mt-4 max-w-3xl font-serif text-3xl text-ink-50 sm:text-4xl">
+              What each step actually does.
+            </h3>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-ink-300">
+              The properties that make the system trustworthy, written
+              plainly — not in jargon.
+            </p>
+            <div className="mt-10">
+              <DeepDive />
+            </div>
           </div>
         </div>
       </section>

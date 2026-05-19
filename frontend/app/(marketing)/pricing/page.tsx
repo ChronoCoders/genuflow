@@ -155,6 +155,16 @@ export default function Pricing() {
         </div>
       </section>
 
+      <section className="border-b border-white/5">
+        <div className="mx-auto w-full max-w-7xl px-6 py-24">
+          <Eyebrow>Compare</Eyebrow>
+          <h2 className="mt-4 max-w-3xl font-serif text-4xl text-ink-50 sm:text-5xl">
+            What's in each tier.
+          </h2>
+          <ComparisonTable />
+        </div>
+      </section>
+
       <section className="border-b border-white/5 bg-ink-900/40">
         <div className="mx-auto w-full max-w-5xl px-6 py-24">
           <Eyebrow>Questions</Eyebrow>
@@ -182,5 +192,149 @@ export default function Pricing() {
         body="Tell us the category, the annual run, and the integration approach. We'll send pricing back within a business day."
       />
     </>
+  );
+}
+
+type Cell = "check" | "dash" | string;
+
+interface Row {
+  feature: string;
+  atelier: Cell;
+  maison: Cell;
+  couture: Cell;
+}
+
+const ROWS: Row[] = [
+  {
+    feature: "Product limit",
+    atelier: "500",
+    maison: "10,000",
+    couture: "Unlimited",
+  },
+  {
+    feature: "Provenance events",
+    atelier: "Unlimited",
+    maison: "Unlimited",
+    couture: "Unlimited",
+  },
+  { feature: "Base mainnet anchoring", atelier: "check", maison: "check", couture: "check" },
+  { feature: "Public verification page", atelier: "check", maison: "check", couture: "check" },
+  { feature: "QR code generation", atelier: "check", maison: "check", couture: "check" },
+  { feature: "Brand dashboard", atelier: "check", maison: "check", couture: "check" },
+  { feature: "API access", atelier: "check", maison: "check", couture: "check" },
+  { feature: "Bulk import", atelier: "check", maison: "check", couture: "check" },
+  { feature: "Webhook delivery", atelier: "dash", maison: "check", couture: "check" },
+  {
+    feature: "Custom verification domain",
+    atelier: "dash",
+    maison: "dash",
+    couture: "check",
+  },
+  {
+    feature: "Team members",
+    atelier: "1",
+    maison: "5",
+    couture: "Unlimited",
+  },
+  { feature: "Priority support", atelier: "dash", maison: "dash", couture: "check" },
+  { feature: "SLA", atelier: "dash", maison: "dash", couture: "check" },
+];
+
+function ComparisonTable() {
+  return (
+    <div className="mt-12 overflow-x-auto rounded-xl border border-white/5">
+      <table className="w-full min-w-[720px] text-sm">
+        <thead>
+          <tr className="border-b border-white/5 bg-ink-900/40">
+            <th className="px-6 py-5 text-left text-[10px] uppercase tracking-[0.24em] text-ink-500">
+              Feature
+            </th>
+            <TierHeader name="Atelier" price="€0.40 / product" subhead="≤ 500 products" />
+            <TierHeader
+              name="Maison"
+              price="€0.28 / product"
+              subhead="≤ 10,000 products"
+              featured
+            />
+            <TierHeader name="Couture" price="Custom" subhead="Unlimited" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {ROWS.map((row) => (
+            <tr key={row.feature}>
+              <td className="px-6 py-4 text-ink-200">{row.feature}</td>
+              <FeatureCell value={row.atelier} />
+              <FeatureCell value={row.maison} featured />
+              <FeatureCell value={row.couture} />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TierHeader({
+  name,
+  price,
+  subhead,
+  featured = false,
+}: {
+  name: string;
+  price: string;
+  subhead: string;
+  featured?: boolean;
+}) {
+  return (
+    <th
+      scope="col"
+      className={`px-6 py-5 text-left ${featured ? "bg-accent/5" : ""}`}
+    >
+      <div className="text-[10px] uppercase tracking-[0.24em] text-ink-500">
+        {name}
+      </div>
+      <div className="mt-1 font-serif text-lg text-ink-50">{price}</div>
+      <div className="mt-0.5 text-xs text-ink-400">{subhead}</div>
+    </th>
+  );
+}
+
+function FeatureCell({ value, featured = false }: { value: Cell; featured?: boolean }) {
+  const tone = featured ? "bg-accent/5" : "";
+  if (value === "check") {
+    return (
+      <td className={`px-6 py-4 ${tone}`}>
+        <CheckIcon />
+      </td>
+    );
+  }
+  if (value === "dash") {
+    return (
+      <td className={`px-6 py-4 text-ink-600 ${tone}`}>
+        <span aria-label="Not included">—</span>
+      </td>
+    );
+  }
+  return (
+    <td className={`px-6 py-4 text-ink-100 ${tone}`}>{value}</td>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      aria-label="Included"
+      className="text-accent"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
   );
 }
