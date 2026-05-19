@@ -1,5 +1,6 @@
 import { BannerImage } from "@/components/marketing/hero-image";
 import { CTABand, Eyebrow, PageHero } from "@/components/marketing/section";
+import { StatGrid } from "@/components/marketing/stat-grid";
 
 export const metadata = {
   title: "Watches & jewelry — Genuflow",
@@ -19,6 +20,19 @@ export default function WatchesJewelryUseCase() {
       <BannerImage
         src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=1920&q=80"
         alt="Mechanical watch movement under loupe in a watchmaker's workshop"
+      />
+
+      <StatGrid
+        eyebrow="The numbers"
+        title={<>The secondary market has become the market.</>}
+        stats={[
+          {
+            value: "+30%",
+            label:
+              "growth in the global secondary market for luxury watches over the past three years — faster than primary sales, and the gap is widening. A piece's record outlives its first owner; today that record is fragmented across paper and screenshots.",
+            source: "Industry market reports",
+          },
+        ]}
       />
 
       <section className="border-b border-white/5">

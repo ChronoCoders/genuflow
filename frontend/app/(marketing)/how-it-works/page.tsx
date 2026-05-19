@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { CTABand, Eyebrow, PageHero } from "@/components/marketing/section";
+import { StepDiagram } from "@/components/marketing/step-diagram";
 
 export const metadata = {
   title: "How it works — Genuflow",
@@ -18,120 +17,19 @@ export default function HowItWorks() {
       />
 
       <section className="border-b border-white/5">
-        <div className="mx-auto w-full max-w-5xl px-6 py-24">
-          <div className="space-y-24">
-            <Step
-              n="01"
-              title="Issue identity at the moment of creation"
-              body={
-                <>
-                  <p>
-                    When a product is finished — leather cut, garment stitched,
-                    watch cased — your team triggers a registration call to
-                    Genuflow. Through the API, through our integration with
-                    your PLM, or through the admin dashboard.
-                  </p>
-                  <p>
-                    We mint a unique product identity, sign it with your
-                    brand's key, and return a QR code. You print it on a hang
-                    tag, etch it on a leather patch, or laser it under the
-                    bezel. From this moment, the product has a public address
-                    and a private history that only you can write to.
-                  </p>
-                </>
-              }
-            />
+        <div className="mx-auto w-full max-w-7xl px-6 py-24">
+          <Eyebrow>The flow</Eyebrow>
+          <h2 className="mt-4 max-w-3xl font-serif text-4xl text-ink-50 sm:text-5xl">
+            Four steps. End to end.
+          </h2>
+          <p className="mt-6 max-w-3xl text-base leading-relaxed text-ink-300">
+            Each step takes minutes to integrate and seconds to use in
+            production. The chain of custody is built once and then runs
+            on its own.
+          </p>
 
-            <Step
-              n="02"
-              title="Record every meaningful event"
-              body={
-                <>
-                  <p>
-                    A product has a life. It is inspected. It is shipped from
-                    the workshop to the boutique. It is sold. Sometimes it is
-                    transferred, repaired, restored. Each event matters — to
-                    your customer, to your insurer, to the secondary market.
-                  </p>
-                  <p>
-                    Through a single endpoint, you push events as they happen.
-                    Manufacture, inspection, shipping, sale, transfer, and
-                    custom event types we register on your behalf. Each event
-                    carries a structured payload — a location, a serial, a
-                    technician's signature.
-                  </p>
-                </>
-              }
-            />
-
-            <Step
-              n="03"
-              title="Anchor every two hours, automatically"
-              body={
-                <>
-                  <p>
-                    Events queue up in our infrastructure for a maximum of two
-                    hours. We hash all unanchored events into a single Merkle
-                    root and submit it to Base mainnet in one transaction.
-                  </p>
-                  <p>
-                    We absorb the gas cost. You see the transaction in your
-                    dashboard. Customers see the transaction hash on the
-                    public verification page. Anyone with a Basescan tab can
-                    audit it themselves.
-                  </p>
-                  <p>
-                    Each brand sees only their own per-brand subhash — Genuflow
-                    is multi-tenant by design, and one brand's records cannot
-                    be correlated against another brand's records using the
-                    on-chain data.
-                  </p>
-                </>
-              }
-            />
-
-            <Step
-              n="04"
-              title="Verify, by anyone, anywhere"
-              body={
-                <>
-                  <p>
-                    The end customer scans the QR. They land on a public page
-                    branded for your house — your name, your typography, the
-                    product they hold in their hands, and its complete
-                    chronological history.
-                  </p>
-                  <p>
-                    No app to download. No account to create. No trust
-                    assumption beyond the math. The page links to the
-                    Basescan transaction so the customer — or a regulator, or
-                    a secondary-market buyer — can verify the record outside
-                    of Genuflow entirely.
-                  </p>
-                </>
-              }
-            />
-
-            <Step
-              n="05"
-              title="Transfer ownership across the resale market"
-              body={
-                <>
-                  <p>
-                    When a piece changes hands — whether through your own
-                    consignment programme or on the secondary market — the new
-                    owner scans the QR and registers themselves directly from
-                    the verification page.
-                  </p>
-                  <p>
-                    The transfer becomes the next event on the timeline.
-                    Anchored to Base on the next batch. Visible to the next
-                    buyer. Your brand stays in the conversation, even on
-                    pieces you sold a decade ago.
-                  </p>
-                </>
-              }
-            />
+          <div className="mt-16">
+            <StepDiagram />
           </div>
         </div>
       </section>
@@ -173,30 +71,6 @@ export default function HowItWorks() {
         cta={{ href: "/docs", label: "Read the docs" }}
       />
     </>
-  );
-}
-
-function Step({
-  n,
-  title,
-  body,
-}: {
-  n: string;
-  title: string;
-  body: React.ReactNode;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-      <div className="md:col-span-3">
-        <div className="font-serif text-5xl text-accent">{n}</div>
-      </div>
-      <div className="md:col-span-9">
-        <h2 className="font-serif text-3xl text-ink-50 sm:text-4xl">{title}</h2>
-        <div className="mt-6 space-y-4 text-base leading-relaxed text-ink-300">
-          {body}
-        </div>
-      </div>
-    </div>
   );
 }
 
