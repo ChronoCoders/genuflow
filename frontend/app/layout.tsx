@@ -16,6 +16,9 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://genuflow.com",
+  ),
   title: "Genuflow",
   description: "Luxury goods authentication, anchored to Base.",
 };

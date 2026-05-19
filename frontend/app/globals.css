@@ -16,3 +16,19 @@ input,
 button {
   font-family: inherit;
 }
+
+/* Shiki output sits inside our framed CodeBlock chrome. The grammar
+   classes carry inline colors; we override the background so the
+   pre matches the surrounding ink-950 surface and add our own padding. */
+.shiki-block pre.shiki {
+  background-color: transparent !important;
+  padding: 1rem;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+.shiki-block code {
+  background-color: transparent !important;
+  font-family: inherit;
+}
