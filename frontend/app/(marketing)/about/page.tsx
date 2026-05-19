@@ -76,6 +76,76 @@ export default function About() {
 
       <section className="border-b border-white/5">
         <div className="mx-auto w-full max-w-5xl px-6 py-24">
+          <Eyebrow>Founder</Eyebrow>
+          <h2 className="mt-4 font-serif text-4xl text-ink-50 sm:text-5xl">
+            Built around a single premise.
+          </h2>
+
+          <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-12 md:items-start">
+            <div className="md:col-span-4">
+              <div className="aspect-square w-full overflow-hidden rounded-lg border border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/altug-tatlisu.jpg"
+                  alt="Altug Tatlisu, founder of Genuflow"
+                  className="block h-full w-full object-cover"
+                  style={{ objectPosition: "center top" }}
+                />
+              </div>
+              <div className="mt-6 font-serif text-xl text-ink-50">
+                Altug Tatlisu
+              </div>
+              <div className="mt-1 text-xs uppercase tracking-[0.24em] text-ink-500">
+                Founder
+              </div>
+              <a
+                href="https://www.linkedin.com/in/altug-tatlisu/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover"
+              >
+                <span>LinkedIn</span>
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M7 17 17 7" />
+                  <path d="M8 7h9v9" />
+                </svg>
+              </a>
+            </div>
+
+            <div className="space-y-5 text-base leading-relaxed text-ink-300 md:col-span-8">
+              <p>
+                A distributed systems engineer who spent years building
+                infrastructure at the intersection of finance,
+                cryptography, and supply chain. Before founding Genuflow,
+                he led engineering teams working on settlement
+                infrastructure and blockchain-native financial systems.
+              </p>
+              <p>
+                Genuflow started from a simple observation: the luxury
+                industry's authentication problem is fundamentally an
+                infrastructure problem. Paper certificates are easy to
+                forge; centralised databases can be altered; only
+                cryptographic commitments anchored to a public chain are
+                structurally tamper-resistant. Genuflow is the company
+                built around that premise.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/5 bg-ink-900/40">
+        <div className="mx-auto w-full max-w-5xl px-6 py-24">
           <Eyebrow>Principles</Eyebrow>
           <h2 className="mt-4 font-serif text-4xl text-ink-50 sm:text-5xl">
             How we operate.
@@ -102,7 +172,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="border-b border-white/5 bg-ink-900/40">
+      <section className="border-b border-white/5">
         <div className="mx-auto w-full max-w-4xl px-6 py-24">
           <Eyebrow>The team</Eyebrow>
           <h2 className="mt-4 font-serif text-4xl text-ink-50 sm:text-5xl">
